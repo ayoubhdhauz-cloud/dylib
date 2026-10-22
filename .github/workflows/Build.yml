@@ -1,0 +1,54 @@
+name: Build
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build inside Theos Docker
+        run: |
+          # Tạo một script để chạy bên trong Docker
+          cat << 'EOF' > build_script.sh
+          #!/bin/bash
+          set -e
+          
+          echo "=== Bắt đầu build ==="
+          cd /workspace/Hi
+          
+          # Fix lỗi xuống dòng file control
+          find . -name "control" -exec perl -pi -e 's/\r//g' {} \; || true
+          
+          export THEOS=/opt/theos
+          make clean
+          
+          # Thêm flag fix lỗi missing symbol
+          export CFLAGS="-Wl,-U,___isPlatformVersionAtLeast"
+          export TARGET=iphone:clang:16.5:13.0
+          export ARCHS=arm64
+          
+          make
+          echo "=== Build thành công ==="
+          EOF
+          chmod +x build_script.sh
+
+          # Chạy Docker image của Theos chính thức
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace \
+            ghcr.io/theos/theos:latest \
+            /workspace/build_script.sh
+
+      - name: Upload Dylib Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: iOSViet-Dylib
+          path: Hi/.theos/obj/arm64/*.dylib
+          if-no-files-found: warn
