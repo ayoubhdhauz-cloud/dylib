@@ -1,0 +1,45 @@
+name: Build Dylib
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Theos
+        run: |
+          export THEOS=$HOME/theos
+          git clone --recursive https://github.com/theos/theos.git $THEOS
+          brew install ldid
+
+      - name: Fix Line Endings
+        run: |
+          # Sửa lỗi xuống dòng của Windows cho file control (nếu có)
+          cd Hi
+          find . -name "control" -exec perl -pi -e 's/\r//g' {} \;
+
+      - name: Build Dylib
+        run: |
+          export THEOS=$HOME/theos
+          cd Hi
+          make clean
+          make
+        env:
+          TARGET: iphone:clang:16.5:13.0
+          ARCHS: arm64
+          CFLAGS: "-Wl,-U,___isPlatformVersionAtLeast"
+
+      - name: Upload Dylib Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: iOSViet-Dylib
+          # Quét tìm file dylib bên trong thư mục Hi
+          path: Hi/.theos/obj/arm64/*.dylib
+          if-no-files-found: warn
