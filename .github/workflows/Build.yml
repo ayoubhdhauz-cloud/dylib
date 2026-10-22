@@ -1,0 +1,37 @@
+name: Build Dylib
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Theos
+        uses: Randomblock1/theos-action@v1
+        with:
+          theos-sdks: 'https://github.com/theos/sdks'
+
+      - name: Build Dylib
+        run: |
+          cd Hi
+          find . -name "control" -exec perl -pi -e 's/\r//g' {} \; || true
+          make clean
+          make
+        env:
+          CFLAGS: "-Wl,-U,___isPlatformVersionAtLeast"
+          TARGET: iphone:clang:16.5:13.0
+          ARCHS: arm64
+
+      - name: Upload Dylib Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: iOSViet-Dylib
+          path: Hi/.theos/obj/arm64/*.dylib
+          if-no-files-found: warn
