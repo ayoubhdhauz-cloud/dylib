@@ -389,10 +389,10 @@ static void ESPTextCallback(void *ctx, NSString *str, CGRect frame,
                                               name:UIApplicationWillResignActiveNotification object:nil];
 #endif
 
-    // Tạo Label hiển thị số đếm hoặc chữ INTEX
-    self.countLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 50, self.bounds.size.width, 30)];
+    // ✅ ĐÃ SỬA: Đưa Label lên trên (cách mép trên 150px - ngay dưới thanh la bàn)
+    self.countLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 150, self.bounds.size.width, 30)];
     self.countLabel.textAlignment = NSTextAlignmentCenter;
-    self.countLabel.textColor = [UIColor colorWithRed:0.0 green:1.0 blue:0.8 alpha:1.0]; // Màu Cyan
+    self.countLabel.textColor = [UIColor colorWithRed:1.0 green:0.2 blue:0.2 alpha:1.0]; // Màu Đỏ
     self.countLabel.font = [UIFont boldSystemFontOfSize:18];
     self.countLabel.text = @"INTEX"; // Mặc định ban đầu
     [self addSubview:self.countLabel];
@@ -428,7 +428,8 @@ static void ESPTextCallback(void *ctx, NSString *str, CGRect frame,
 - (void)layoutSubviews {
     [super layoutSubviews];
     if (self.superview) self.frame = self.superview.bounds;
-    if (self.countLabel) self.countLabel.frame = CGRectMake(0, 50, self.bounds.size.width, 30);
+    // ✅ Cập nhật vị trí Label khi màn hình xoay hoặc đổi kích thước (Giữ nguyên vị trí Y = 150)
+    if (self.countLabel) self.countLabel.frame = CGRectMake(0, 150, self.bounds.size.width, 30);
 }
 
 - (void)setupModuleBase {
@@ -453,7 +454,7 @@ static void ESPTextCallback(void *ctx, NSString *str, CGRect frame,
 
 - (void)configureRenderingLayers {
     UIColor *white  = [UIColor colorWithRed:0.9 green:0.9 blue:0.9 alpha:0.85];
-    // Đổi màu Box và Máu sang màu Xanh lơ (Cyan) giống ảnh
+    // Đổi màu Box và Máu sang màu Xanh lơ (Cyan)
     UIColor *cyanColor = [UIColor colorWithRed:0.0 green:1.0 blue:0.8 alpha:1.0]; 
     UIColor *red     = [UIColor colorWithRed:1.0 green:0.3 blue:0.3 alpha:0.9];
 
@@ -689,7 +690,6 @@ static void ESPTextCallback(void *ctx, NSString *str, CGRect frame,
     self.aimAssistLayer.path = self.alertLayer.path = nil;
     [self resetTextLayers];
     
-    // ✅ Đã sửa: Giữ lại chữ INTEX khi hết trận
     if (self.countLabel) {
         self.countLabel.text = @"INTEX";
         self.countLabel.textColor = [UIColor colorWithRed:0.0 green:1.0 blue:0.8 alpha:1.0]; // Màu Cyan
@@ -772,7 +772,6 @@ bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeStat
     if (!isVaildPtr(entries)) return stats;
     const int capacity = ReadAddr<int>(entries + kIl2CppArrayMaxLength);
     
-    // 🛡️ ĐÃ FIX LỖI CÚ PHÁP
     if (capacity <= 0 || capacity > 256 || count < 0 || count > capacity) {
         return stats;
     }
@@ -792,7 +791,6 @@ bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeStat
     UpdateRunSpeed(Moudule_Base,gRunSpeed,gRunSpeedValue);
     self.aimAssistLayer.path = nil;
 
-    // 🛠️ ĐÃ SỬA LỖI CÚ PHÁP TẠI ĐÂY
     stats.firingRaw = get_FiringPRIState(local);
     stats.firing    = GamePRI::Firing(stats.firingRaw);
     stats.scoping   = get_IsScoping(local);
@@ -834,7 +832,6 @@ bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeStat
         const Vector3 hip = getPositionExt(getHip(pawn));
         if (IsZeroVec(hip)) continue;
         
-        // 🛠️ FIX LỖI CÚ PHÁP TẠI ĐÂY
         const float distance = Vector3::Distance(myLoc, hip);
         const float maxDist = isSilentAim ? activeSilentDistance : gESPMaxDistance;
         if (!std::isfinite(distance) || distance > maxDist) continue;
@@ -845,7 +842,6 @@ bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeStat
         if ((triggerActive || isSilentAim) && visible && !knocked) {
             Vector3 head = getPositionExt(getHead(pawn));
             
-            // 🛠️ FIX LỖI CHÍNH TẢ TẠI ĐÂY
             if (isAimNeck && !isSilentAim) head = AimPoint::Neck(head, hip);
             
             if (!IsZeroVec(head) && std::isfinite(head.x) &&
@@ -866,23 +862,21 @@ bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeStat
             }
         }
 
-        // ✅ SỬA LỖI LINE KHÔNG NỐI VÀO CHỮ "ĐỊCH: X"
+        // ✅ SỬA LỖI LINE NỐI VÀO CHỮ "ĐỊCH: X" TRÊN CAO
         Vector3 headPos = getPositionExt(getHead(pawn));
         Vector3 screenHead = WorldToScreenLayer(headPos, matrix, vpW, vpH, vw, vh);
         
         if (isLine && distance <= gESPMaxDistance && screenHead.z > 0 && std::isfinite(screenHead.x) && std::isfinite(screenHead.y)) {
             CGPoint startPoint = CGPointMake(screenHead.x, screenHead.y - 5.0f); 
             
-            // Lấy tọa độ thực tế của Label "Địch: X" để nối line
-            CGRect labelFrame = self.countLabel.frame;
             CGPoint endPoint;
-            
-            if (self.countLabel && !self.countLabel.hidden && self.countLabel.text.length > 0) {
-                // Nối đến đáy của chữ (tâm X của chữ, đáy Y của chữ + 5px)
+            if (self.countLabel) {
+                // Điểm cuối của Line chụm lại ở ngay dưới chữ "Địch: X" (Y + chiều cao + 5px)
+                CGRect labelFrame = self.countLabel.frame;
                 endPoint = CGPointMake(labelFrame.origin.x + labelFrame.size.width / 2.0f, labelFrame.origin.y + labelFrame.size.height + 5.0f);
             } else {
-                // Fallback nếu không có label
-                endPoint = CGPointMake(screenHead.x, 65.0f + 10.0f);
+                // Fallback an toàn
+                endPoint = CGPointMake(vw / 2.0f, 150.0f + 30.0f + 5.0f);
             }
             
             ESPAddSnapline(buffers->snaplinePath, startPoint, endPoint);
