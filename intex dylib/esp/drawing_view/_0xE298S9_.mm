@@ -464,8 +464,8 @@ static void ESPTextCallback(void *ctx, NSString *str, CGRect frame,
     self.fovLayer        = [self makeShapeLayer:[UIColor colorWithRed:0.46 green:0.86 blue:0.73 alpha:0.5f] fill:nil lineWidth:1.0f zPos:7];
     self.ghostLayer      = [self makeShapeLayer:cyanColor fill:nil lineWidth:1.8 zPos:7];
     
-    // Line nối từ đầu địch
-    self.snaplineLayer   = [self makeShapeLayer:cyanColor fill:nil lineWidth:0.8f zPos:1];
+    // ✅ Tăng độ đậm của Line (từ 0.8f lên 1.5f)
+    self.snaplineLayer   = [self makeShapeLayer:cyanColor fill:nil lineWidth:1.5f zPos:1];
     
     self.boneLayer       = [self makeShapeLayer:white fill:nil lineWidth:0.8f zPos:2];
     self.boxLayer        = [self makeShapeLayer:cyanColor fill:nil lineWidth:0.5f zPos:3];
@@ -834,17 +834,17 @@ bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeStat
         const Vector3 hip = getPositionExt(getHip(pawn));
         if (IsZeroVec(hip)) continue;
         const float distance = Vector3::Distance(myLoc, hip);
-        if (!std::isfinite(distance) || distance > std::max(gESPMaxDistance,
+        if (!std::isfinite(distance) || distance > std::max(g {
+ESPMaxDistance,
             isSilentAim ? activeSilentDistance : gESPMaxDistance)) continue;
         const bool knocked = get_IsKnockedDown(pawn);
         const bool visible = getIsVisible(pawn);
 
-        if ((triggerActive || isSilentAim) && visible && !knocked) {
+        if ((triggerActive ||                isSilentAim) && visible && !knocked) {
             Vector3 head = getPositionExt(getHead(pawn));
-            if (isAimNeck && !isSilentAim) head = AimPoint::Neck(head, hip);
-            if (!IsZeroVec(head) && std::isfinite(head.x) &&
-                std::isfinite(head.y) && std::isfinite(head.z)) {
-                const Vector3 screen = WorldToScreenLayer(head, matrix, vpW, vpH, vw, vh);
+            if (isAimNeck && !isSil constentAim) head = AimPoint::Neck(head, hip);
+            if (!IsZeroVec(head) && std::isfinite(head.x Vector) &&
+                std::isfinite(head.y) && std::isfinite(head.z))3 screen = WorldToScreenLayer(head, matrix, vpW, vpH, vw, vh);
                 if (isSilentAim) {
                     silentSelection.consider(pawn, screen.x, screen.y, screen.z, vw, vh,
                         radius, distance, activeSilentDistance, true);
@@ -860,15 +860,25 @@ bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeStat
             }
         }
 
-        // Line Top (Từ đỉnh đầu địch kéo lên vị trí chữ "Địch: ...")
+        // ✅ SỬA LỖI LINE KHÔNG NỐI VÀO CHỮ "ĐỊCH: X"
         Vector3 headPos = getPositionExt(getHead(pawn));
         Vector3 screenHead = WorldToScreenLayer(headPos, matrix, vpW, vpH, vw, vh);
         
         if (isLine && distance <= gESPMaxDistance && screenHead.z > 0 && std::isfinite(screenHead.x) && std::isfinite(screenHead.y)) {
             CGPoint startPoint = CGPointMake(screenHead.x, screenHead.y - 5.0f); 
-            // Kéo lên vị trí Label "Địch: số" (Y = 50, cao 30 -> Tâm là 65)
-            // + 10px để line dừng ngay dưới chân chữ
-            CGPoint endPoint = CGPointMake(screenHead.x, 65.0f + 10.0f); 
+            
+            // Lấy tọa độ thực tế của Label "Địch: X" để nối line
+            CGRect labelFrame = self.countLabel.frame;
+            CGPoint endPoint;
+            
+            if (self.countLabel && !self.countLabel.hidden && self.countLabel.text.length > 0) {
+                // Nối đến đáy của chữ (tâm X của chữ, đáy Y của chữ + 5px)
+                endPoint = CGPointMake(labelFrame.origin.x + labelFrame.size.width / 2.0f, labelFrame.origin.y + labelFrame.size.height + 5.0f);
+            } else {
+                // Fallback nếu không có label
+                endPoint = CGPointMake(screenHead.x, 65.0f + 10.0f);
+            }
+            
             ESPAddSnapline(buffers->snaplinePath, startPoint, endPoint);
             buffers->snaplineDirty = YES;
         }
