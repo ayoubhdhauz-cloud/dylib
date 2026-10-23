@@ -389,8 +389,8 @@ static void ESPTextCallback(void *ctx, NSString *str, CGRect frame,
                                               name:UIApplicationWillResignActiveNotification object:nil];
 #endif
 
-    // ✅ ĐÃ CHỈNH: Kéo Y xuống 35 (sát ngay dưới thanh la bàn)
-    self.countLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 35, self.bounds.size.width, 30)];
+    // ✅ ĐÃ CHỈNH: Kéo Y xuống 15 (sát mép trên cùng, ngay dưới tai thỏ/notch)
+    self.countLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 15, self.bounds.size.width, 30)];
     self.countLabel.textAlignment = NSTextAlignmentCenter;
     self.countLabel.textColor = [UIColor colorWithRed:1.0 green:0.2 blue:0.2 alpha:1.0]; // Màu Đỏ
     self.countLabel.font = [UIFont boldSystemFontOfSize:18];
@@ -429,8 +429,8 @@ static void ESPTextCallback(void *ctx, NSString *str, CGRect frame,
     [super layoutSubviews];
     if (self.superview) self.frame = self.superview.bounds;
     
-    // ✅ ĐÃ SỬA: Ép cứng Y = 35, không cho phép reset
-    if (self.countLabel) self.countLabel.frame = CGRectMake(0, 35, self.bounds.size.width, 30);
+    // ✅ ĐÃ SỬA: Ép cứng Y = 15, không cho phép reset
+    if (self.countLabel) self.countLabel.frame = CGRectMake(0, 15, self.bounds.size.width, 30);
 }
 
 - (void)setupModuleBase {
@@ -873,12 +873,12 @@ bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeStat
             
             CGPoint endPoint;
             if (self.countLabel) {
-                // ✅ Tính toán tâm chữ: X giữa màn hình, Y = Vị trí Label (35) + Nửa chiều cao (15)
+                // ✅ Tính toán tâm chữ: X giữa màn hình, Y = Vị trí Label (15) + Nửa chiều cao (15)
                 // Trừ đi 2px để line chụm ngay chân chữ, không đè lên chữ
                 endPoint = CGPointMake(vw / 2.0f, self.countLabel.frame.origin.y + (self.countLabel.frame.size.height / 2.0f) - 2.0f);
             } else {
                 // Fallback an toàn nếu không có Label
-                endPoint = CGPointMake(vw / 2.0f, 35.0f + 15.0f); 
+                endPoint = CGPointMake(vw / 2.0f, 15.0f + 15.0f); 
             }
             
             ESPAddSnapline(buffers->snaplinePath, startPoint, endPoint);
