@@ -15,21 +15,9 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Manual Install Theos & SDKs
-      env:
-        THEOS: ${{ github.workspace }}/theos
-      run: |
-        # 1. Tải Theos trực tiếp từ Github
-        git clone --recursive https://github.com/theos/theos.git $THEOS
-        
-        # 2. Tải SDK iOS (Bản 16.5)
-        mkdir -p $THEOS/sdks
-        curl -L -o sdk.zip https://github.com/theos/sdks/releases/download/master/iPhoneOS16.5.sdk.zip
-        unzip -q sdk.zip -d $THEOS/sdks/
-        rm sdk.zip
-        
-        # 3. Cấp quyền thực thi cho các tool của Theos
-        chmod +x $THEOS/bin/*
+    # Sử dụng action cài Theos ổn định, tự động tải SDK chuẩn
+    - name: Setup Theos
+      uses: Randomblock1/theos-action@v1.2.0
 
     - name: Clean and Build
       env:
@@ -38,7 +26,7 @@ jobs:
         # Di chuyển vào thư mục chứa code (có dấu cách nên phải có ngoặc kép)
         cd "intex dylib"
         
-        # Xóa ký tự xuống dòng (CRLF) nếu có
+        # Xóa ký tự xuống dòng (CRLF) nếu có trong file control
         find . -name "control" -exec perl -pi -e 's/\r//g' {} \; || true
         
         # Build dự án
@@ -49,6 +37,5 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: Dylib-Build
-        # Tìm file .dylib trong thư mục .theos để upload lên
         path: "intex dylib/.theos/obj/**/*.dylib"
         if-no-files-found: error
