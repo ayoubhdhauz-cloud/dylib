@@ -114,7 +114,7 @@
     self.header = [[UIView alloc] initWithFrame:CGRectZero];
     [self.panel addSubview:self.header];
     UILabel *brand = [[UILabel alloc] initWithFrame:CGRectMake(18, 11, 220, 23)];
-    brand.text = @"INTEX X";
+    brand.text = @"INTEX";
     brand.font = MizzeFont(20, UIFontWeightSemibold);
     brand.adjustsFontSizeToFitWidth = YES; brand.minimumScaleFactor = 0.7;
     brand.tag = 10;
@@ -507,7 +507,7 @@
         y = [self toggle:@"Giao diện tối" key:@"DarkTheme" fallback:YES y:y];
         y = [self toggle:@"Tiết kiệm pin (30 FPS)" key:@"BalancedRender" fallback:NO y:y];
     }
-    UILabel *credit=[self label:@"InTex X" frame:CGRectMake(8,y+8,[self contentWidth]-16,20) size:10];
+    UILabel *credit=[self label:@"HoangHaDev" frame:CGRectMake(8,y+8,[self contentWidth]-16,20) size:10];
     credit.textColor=MizzeMuted();credit.textAlignment=NSTextAlignmentCenter;
     [self.scroll addSubview:credit];y+=36;
     for (UIControl *control in self.controls) {
