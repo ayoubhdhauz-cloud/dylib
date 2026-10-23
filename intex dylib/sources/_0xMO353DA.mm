@@ -145,12 +145,12 @@
     [self.header addSubview:brand];
     
     UILabel *caption = [[UILabel alloc] initWithFrame:CGRectMake(18, 35, 220, 14)];
-    caption.text = @"PREMIUM EDITION";
+    caption.text = @"Telegram : @duong1907";
     caption.font = MizzeFont(9, UIFontWeightMedium);
     caption.tag = 11;
     [self.header addSubview:caption];
     
-    UILabel *logo = [self label:@"m" frame:CGRectMake(14, 12, 34, 34) size:23];
+    UILabel *logo = [self label:@"I" frame:CGRectMake(14, 12, 34, 34) size:23];
     logo.tag = 13; logo.textAlignment = NSTextAlignmentCenter;
     logo.layer.cornerRadius = 10; logo.clipsToBounds = YES;
     logo.backgroundColor = [MizzeMint() colorWithAlphaComponent:0.15];
