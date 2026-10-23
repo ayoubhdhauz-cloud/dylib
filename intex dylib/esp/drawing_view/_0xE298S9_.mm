@@ -271,7 +271,7 @@ static inline void ApplyPath(CAShapeLayer *layer, CGMutablePathRef path, bool di
     if (layer) layer.path = (dirty && path) ? path : nil;
 }
 
-// ─── Box (Nét mảnh bo góc) ──────────────────────────────────────
+// ─── Box (Đủ 4 cạnh, bo góc nhẹ) ──────────────────────────────────────
 static inline void ESPAddBox(CGMutablePathRef path, CGRect rect) {
     if (path) {
         UIBezierPath *bezier = [UIBezierPath bezierPathWithRoundedRect:rect cornerRadius:1.5f];
@@ -287,20 +287,21 @@ static inline void ESPAddSnapline(CGMutablePathRef path, CGPoint start, CGPoint 
     }
 }
 
-// ─── Thanh máu (Mỏng như sợi chỉ, viền đen) ────────────────
+// ─── Thanh máu (Nằm sát vách trái của Box) ────────────────
 static inline void ESPAddHealthBar(CGMutablePathRef bgPath, CGMutablePathRef fillPath,
                                    CGRect boxRect, float hp) {
     if (!bgPath || !fillPath) return;
 
-    const CGFloat barW = 2.0f;
-    const CGFloat gap  = 4.0f; 
-    const CGFloat bdr  = 0.5f;
+    const CGFloat barW = 2.0f; // Độ dày thanh máu (2px)
+    const CGFloat gap  = 2.0f; // Khoảng cách từ Box tới thanh máu (sát vách)
+    const CGFloat bdr  = 0.5f; // Viền đen mỏng bao quanh thanh máu
 
-    CGFloat x = boxRect.origin.x - gap - barW;
+    // Đặt thanh máu nằm bên trái của Box
+    CGFloat x = boxRect.origin.x - gap - barW; 
     CGFloat y = boxRect.origin.y;
     CGFloat h = boxRect.size.height;
 
-    // Nền thanh máu
+    // Nền thanh máu (viền đen)
     CGPathAddRect(bgPath, NULL, CGRectMake(x - bdr, y - bdr, barW + bdr * 2.0f, h + bdr * 2.0f));
 
     // Phần máu tụt xuống
@@ -347,6 +348,9 @@ static inline BOOL RenderFOVCirclePath(CGMutablePathRef path,
 @property (nonatomic, assign) NSUInteger appliedRenderRevision;
 @property (nonatomic, assign) CGSize lastFovSize;
 @property (nonatomic, assign) float lastFovRadius;
+
+// Label hiển thị Địch / INTEX
+@property (nonatomic, strong) UILabel *countLabel;
 @end
 
 @implementation _0xDAB2826
@@ -384,6 +388,15 @@ static void ESPTextCallback(void *ctx, NSString *str, CGRect frame,
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(applicationWillResignActive:)
                                               name:UIApplicationWillResignActiveNotification object:nil];
 #endif
+
+    // Tạo Label hiển thị số đếm hoặc chữ INTEX
+    self.countLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 40, self.bounds.size.width, 30)];
+    self.countLabel.textAlignment = NSTextAlignmentCenter;
+    self.countLabel.textColor = [UIColor colorWithRed:0.0 green:1.0 blue:0.8 alpha:1.0]; // Màu Cyan
+    self.countLabel.font = [UIFont boldSystemFontOfSize:18];
+    self.countLabel.text = @"INTEX"; // Mặc định ban đầu
+    [self addSubview:self.countLabel];
+
     return self;
 }
 
@@ -415,6 +428,7 @@ static void ESPTextCallback(void *ctx, NSString *str, CGRect frame,
 - (void)layoutSubviews {
     [super layoutSubviews];
     if (self.superview) self.frame = self.superview.bounds;
+    if (self.countLabel) self.countLabel.frame = CGRectMake(0, 40, self.bounds.size.width, 30);
 }
 
 - (void)setupModuleBase {
@@ -439,28 +453,30 @@ static void ESPTextCallback(void *ctx, NSString *str, CGRect frame,
 
 - (void)configureRenderingLayers {
     UIColor *white  = [UIColor colorWithRed:0.9 green:0.9 blue:0.9 alpha:0.85];
-    UIColor *hpGreen = [UIColor colorWithRed:0.46 green:0.86 blue:0.73 alpha:1.0];
+    // Đổi màu Box và Máu sang màu Xanh lơ (Cyan) giống ảnh
+    UIColor *cyanColor = [UIColor colorWithRed:0.0 green:1.0 blue:0.8 alpha:1.0]; 
     UIColor *red     = [UIColor colorWithRed:1.0 green:0.3 blue:0.3 alpha:0.9];
 
     self.boxKnockLayer   = [self makeShapeLayer:red fill:nil lineWidth:0.8f zPos:1];
-    self.boxBotLayer     = [self makeShapeLayer:hpGreen fill:nil lineWidth:1.0f zPos:3];
-    self.boxPlayerLayer  = [self makeShapeLayer:white fill:nil lineWidth:1.0f zPos:3];
+    self.boxBotLayer     = [self makeShapeLayer:cyanColor fill:nil lineWidth:1.0f zPos:3];
+    self.boxPlayerLayer  = [self makeShapeLayer:cyanColor fill:nil lineWidth:1.0f zPos:3];
 
     self.fovLayer        = [self makeShapeLayer:[UIColor colorWithRed:0.46 green:0.86 blue:0.73 alpha:0.5f] fill:nil lineWidth:1.0f zPos:7];
-    self.ghostLayer      = [self makeShapeLayer:[UIColor colorWithRed:0.46 green:0.86 blue:0.73 alpha:0.95] fill:nil lineWidth:1.8 zPos:7];
+    self.ghostLayer      = [self makeShapeLayer:cyanColor fill:nil lineWidth:1.8 zPos:7];
     
-    self.snaplineLayer   = [self makeShapeLayer:[UIColor colorWithWhite:1.0 alpha:0.4] fill:nil lineWidth:0.5f zPos:1];
+    self.snaplineLayer   = [self makeShapeLayer:cyanColor fill:nil lineWidth:0.8f zPos:1];
     self.boneLayer       = [self makeShapeLayer:white fill:nil lineWidth:0.8f zPos:2];
-    self.boxLayer        = [self makeShapeLayer:white fill:nil lineWidth:0.5f zPos:3];
+    self.boxLayer        = [self makeShapeLayer:cyanColor fill:nil lineWidth:0.5f zPos:3];
     
-    self.hpBackgroundLayer = [self makeShapeLayer:nil fill:[UIColor colorWithWhite:0.0 alpha:0.8] lineWidth:0 zPos:4];
-    self.hpFillLayer       = [self makeShapeLayer:nil fill:hpGreen lineWidth:0 zPos:5];
+    // Thanh máu: Nền đen, ruột màu Cyan
+    self.hpBackgroundLayer = [self makeShapeLayer:nil fill:[UIColor blackColor] lineWidth:0 zPos:4];
+    self.hpFillLayer       = [self makeShapeLayer:nil fill:cyanColor lineWidth:0 zPos:5];
 
     self.hpWarningLayer = [self makeShapeLayer:nil fill:[UIColor colorWithRed:1 green:0.72 blue:0.25 alpha:1] lineWidth:0 zPos:5];
     self.hpCriticalLayer = [self makeShapeLayer:nil fill:[UIColor colorWithRed:1 green:0.27 blue:0.32 alpha:1] lineWidth:0 zPos:5];
     self.hpHighlightLayer = [self makeShapeLayer:nil fill:[UIColor colorWithWhite:1 alpha:0.4] lineWidth:0 zPos:6];
 
-    self.aimAssistLayer = [self makeShapeLayer:hpGreen fill:nil lineWidth:1.2f zPos:7];
+    self.aimAssistLayer = [self makeShapeLayer:cyanColor fill:nil lineWidth:1.2f zPos:7];
     
     for (CAShapeLayer *l in @[self.aimAssistLayer, self.ghostLayer, self.hpWarningLayer, self.hpCriticalLayer, self.hpHighlightLayer, self.fovLayer, self.snaplineLayer, self.boneLayer, self.boxLayer,
                                self.hpBackgroundLayer, self.hpFillLayer,
@@ -508,7 +524,7 @@ static void ESPTextCallback(void *ctx, NSString *str, CGRect frame,
     l.foregroundColor = color.CGColor;
     if (l.fontSize != fs || !l.font) {
         l.fontSize = fs;
-        l.font = (__bridge CFTypeRef)[UIFont systemFontOfSize:fs weight:UIFontWeightMedium];
+        l.font = (__bridge CFTypeRef)[UIFont systemFontOfSize:fs weight:UIFontWeightSemibold];
     }
     l.alignmentMode   = leftAligned ? kCAAlignmentLeft : kCAAlignmentCenter;
 }
@@ -672,6 +688,9 @@ static void ESPTextCallback(void *ctx, NSString *str, CGRect frame,
     self.hpBackgroundLayer.path = self.hpFillLayer.path                 = nil;
     self.aimAssistLayer.path = self.alertLayer.path = nil;
     [self resetTextLayers];
+    
+    // Xoá text khi mất kết nối/ hết trận
+    if (self.countLabel) self.countLabel.text = @"";
 }
 
 - (void)dealloc {
@@ -711,6 +730,8 @@ bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeStat
                             viewWidth:(CGFloat)vw viewHeight:(CGFloat)vh
                         matrixVpWidth:(CGFloat)vpW matrixVpHeight:(CGFloat)vpH {
     ESPFrameStats stats = {};
+    int totalEnemies = 0; // Biến đếm tổng số địch
+    
     struct SilentFrame {
         bool published = false;
         ~SilentFrame() {
@@ -748,7 +769,7 @@ bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeStat
     if (!isVaildPtr(entries)) return stats;
     const int capacity = ReadAddr<int>(entries + kIl2CppArrayMaxLength);
     
-    // ĐÃ FIX LỖI CÚ PHÁP TẠI ĐÂY
+    // 🛡️ ĐÃ FIX LỖI CÚ PHÁP TẠI ĐÂY
     if (capacity <= 0 || capacity > 256 || count < 0 || count > capacity) {
         return stats;
     }
@@ -833,6 +854,7 @@ bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeStat
             }
         }
 
+        // Line Top (Từ đỉnh đầu địch kéo thẳng lên mép trên màn hình)
         Vector3 headPos = getPositionExt(getHead(pawn));
         Vector3 screenHead = WorldToScreenLayer(headPos, matrix, vpW, vpH, vw, vh);
         
@@ -844,12 +866,26 @@ bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeStat
         }
 
         if ((visible || knocked) && distance <= gESPMaxDistance) {
+            totalEnemies++; // Đếm số địch xuất hiện
             const bool bot = get_IsBot(pawn);
             if (bot) ++stats.botCount;
             else ++stats.playerCount;
             _0x35572DA(buffers, ESPTextCallback, (__bridge void *)self,
                        pawn, hp, distance, hip, knocked, bot, matrix, vw, vh, vpW, vpH);
         }
+    }
+
+    // Cập nhật chữ trên màn hình
+    if (stats.inMatch) {
+        if (totalEnemies > 0) {
+            self.countLabel.text = [NSString stringWithFormat:@"Địch: %d", totalEnemies];
+            self.countLabel.textColor = [UIColor colorWithRed:0.0 green:1.0 blue:0.8 alpha:1.0]; // Cyan
+        } else {
+            self.countLabel.text = @"INTEX";
+            self.countLabel.textColor = [UIColor whiteColor]; // Trắng
+        }
+    } else {
+        self.countLabel.text = @""; // Xoá nếu chưa vào trận
     }
 
     if(gTargetLine && (isSilentAim ? silentSelection.target : selection.target)) {
@@ -884,7 +920,8 @@ bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeStat
             get_CurHP(finalTarget) > 0 && !get_IsKnockedDown(finalTarget) &&
             get_CurHP(local) > 0 && !get_IsKnockedDown(local)) {
             const Vector3 direction = finalHead - myLoc;
-            if (Vector3::SqrMagnitude(direction) > 0.0001f) {
+            if (Vector3::SqrMagn;
+itude(direction) > 0.0001f) {
                 const Quaternion targetRot = Quaternion::Normalized(
                     Quaternion::LookRotation(direction, Vector3::Up()));
                 if (std::isfinite(targetRot.x) && std::isfinite(targetRot.y) &&
@@ -921,8 +958,7 @@ bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeStat
 // ✅ _0x953DA13 - VIEW CONTAINER
 // ============================================================
 @implementation _0x953DA13 {
-    _0xDAB2826 *_0x2862AD;
-}
+    _0xDAB2826 *_0x2862AD}
 
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
