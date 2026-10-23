@@ -769,7 +769,7 @@ bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeStat
     if (!isVaildPtr(entries)) return stats;
     const int capacity = ReadAddr<int>(entries + kIl2CppArrayMaxLength);
     
-    // 🛡️ ĐÃ FIX LỖI CÚ PHÁP TẠI ĐÂY
+    // 🛡️ ĐÃ FIX LỖI CÚ PHÁP
     if (capacity <= 0 || capacity > 256 || count < 0 || count > capacity) {
         return stats;
     }
@@ -920,8 +920,7 @@ bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeStat
             get_CurHP(finalTarget) > 0 && !get_IsKnockedDown(finalTarget) &&
             get_CurHP(local) > 0 && !get_IsKnockedDown(local)) {
             const Vector3 direction = finalHead - myLoc;
-            if (Vector3::SqrMagn;
-itude(direction) > 0.0001f) {
+            if (Vector3::SqrMagnitude(direction) > 0.0001f) {
                 const Quaternion targetRot = Quaternion::Normalized(
                     Quaternion::LookRotation(direction, Vector3::Up()));
                 if (std::isfinite(targetRot.x) && std::isfinite(targetRot.y) &&
@@ -958,7 +957,8 @@ itude(direction) > 0.0001f) {
 // ✅ _0x953DA13 - VIEW CONTAINER
 // ============================================================
 @implementation _0x953DA13 {
-    _0xDAB2826 *_0x2862AD}
+    _0xDAB2826 *_0x2862AD;
+}
 
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
