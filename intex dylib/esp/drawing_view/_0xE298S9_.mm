@@ -389,8 +389,8 @@ static void ESPTextCallback(void *ctx, NSString *str, CGRect frame,
                                               name:UIApplicationWillResignActiveNotification object:nil];
 #endif
 
-    // ✅ ĐÃ SỬA: Đưa Label lên trên (cách mép trên 150px - ngay dưới thanh la bàn)
-    self.countLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 150, self.bounds.size.width, 30)];
+    // ✅ ĐÃ CHỈNH: Ép cứng Y = 95 để nằm chính giữa vòng khoanh đỏ (ngay dưới la bàn)
+    self.countLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 95, self.bounds.size.width, 30)];
     self.countLabel.textAlignment = NSTextAlignmentCenter;
     self.countLabel.textColor = [UIColor colorWithRed:1.0 green:0.2 blue:0.2 alpha:1.0]; // Màu Đỏ
     self.countLabel.font = [UIFont boldSystemFontOfSize:18];
@@ -428,8 +428,8 @@ static void ESPTextCallback(void *ctx, NSString *str, CGRect frame,
 - (void)layoutSubviews {
     [super layoutSubviews];
     if (self.superview) self.frame = self.superview.bounds;
-    // ✅ Cập nhật vị trí Label khi màn hình xoay hoặc đổi kích thước (Giữ nguyên vị trí Y = 150)
-    if (self.countLabel) self.countLabel.frame = CGRectMake(0, 150, self.bounds.size.width, 30);
+    // ✅ Cập nhật vị trí Label khi màn hình xoay hoặc đổi kích thước (Giữ nguyên vị trí Y = 95)
+    if (self.countLabel) self.countLabel.frame = CGRectMake(0, 95, self.bounds.size.width, 30);
 }
 
 - (void)setupModuleBase {
@@ -867,16 +867,17 @@ bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeStat
         Vector3 screenHead = WorldToScreenLayer(headPos, matrix, vpW, vpH, vw, vh);
         
         if (isLine && distance <= gESPMaxDistance && screenHead.z > 0 && std::isfinite(screenHead.x) && std::isfinite(screenHead.y)) {
+            // Điểm bắt đầu từ trên đầu địch một chút
             CGPoint startPoint = CGPointMake(screenHead.x, screenHead.y - 5.0f); 
             
             CGPoint endPoint;
             if (self.countLabel) {
-                // Điểm cuối của Line chụm lại ở ngay dưới chữ "Địch: X" (Y + chiều cao + 5px)
-                CGRect labelFrame = self.countLabel.frame;
-                endPoint = CGPointMake(labelFrame.origin.x + labelFrame.size.width / 2.0f, labelFrame.origin.y + labelFrame.size.height + 5.0f);
+                // ✅ Tính toán tâm chữ: X giữa màn hình, Y = Vị trí Label (95) + Nửa chiều cao (15)
+                // Trừ đi 2px để line chụm ngay chân chữ, không đè lên chữ
+                endPoint = CGPointMake(vw / 2.0f, self.countLabel.frame.origin.y + (self.countLabel.frame.size.height / 2.0f) - 2.0f);
             } else {
-                // Fallback an toàn
-                endPoint = CGPointMake(vw / 2.0f, 150.0f + 30.0f + 5.0f);
+                // Fallback an toàn nếu không có Label
+                endPoint = CGPointMake(vw / 2.0f, 95.0f + 15.0f); 
             }
             
             ESPAddSnapline(buffers->snaplinePath, startPoint, endPoint);
