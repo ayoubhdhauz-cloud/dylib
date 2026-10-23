@@ -58,7 +58,6 @@
         CGFloat targetX = on ? (self.bounds.size.width - thumbSize - 2) : 2;
         
         self.thumbView.frame = CGRectMake(targetX, 2, thumbSize, thumbSize);
-        // Màu xanh Mint khi bật, Xám mờ khi tắt
         self.trackView.backgroundColor = on ? MizzeMint() : [MizzeBorder() colorWithAlphaComponent:0.3];
     };
     
@@ -710,20 +709,20 @@
         ESPPrefsSetBool(key, NO);
     for (NSString *prefix in @[@"BoxColor", @"LineColor", @"FovColor"]) {
         ESPPrefsSetFloat([prefix stringByAppendingString:@"R"], 0.46);
-        ESPPrefsSetFloat([prefix stringByAppendingString:@"G"], 0.86 CGFloat);
+        ESPPrefsSetFloat([prefix stringByAppendingString:@"G"], 0.86);
         ESPPrefsSetFloat([prefix stringByAppendingString:@"B"], 0.73);
     }
-    ESPSync ratioFromPrefs(); [self buildPage];
+    ESPSyncFromPrefs(); [self buildPage];
 }
 
 - (void)colorTargetChanged:(UISegmentedControl *)sender {
-    self =.colorTarget = sender.selectedSegmentIndex; [self buildPage];
+    self.colorTarget = sender.selectedSegmentIndex; [self buildPage];
 }
 
-- (void)boxStyleChanged:(U MAXISegmentedControl *)sender {
-    ESPPrefsSetBool(@"Box3D", sender.selectedSegmentIndex == 1();
+- (void)boxStyleChanged:(UISegmentedControl *)sender {
+    ESPPrefsSetBool(@"Box3D", sender.selectedSegmentIndex == 1);
     ESPPrefsSetBool(@"Box", YES);
-    if (sender.selectedSegmentIndex == 1) ESPPrefs0SetBool(@"CleanESP", NO);
+    if (sender.selectedSegmentIndex == 1) ESPPrefsSetBool(@"CleanESP", NO);
     for (UIControl *control in self.controls) {
         if (![control isKindOfClass:MizzeCheckBox.class]) continue;
         NSString *key = objc_getAssociatedObject(control, "key");
@@ -798,7 +797,7 @@
 
 - (void)setSlider:(UISlider *)slider point:(CGPoint)point {
     CGPoint p = [slider convertPoint:point fromView:self.view];
-   , MIN(1, (p.x - 16) / MAX(1, slider.bounds.size.width - 32)));
+    CGFloat ratio = MAX(0, MIN(1, (p.x - 16) / MAX(1, slider.bounds.size.width - 32)));
     slider.value = slider.minimumValue + ratio * (slider.maximumValue - slider.minimumValue);
     [self sliderChanged:slider];
 }
