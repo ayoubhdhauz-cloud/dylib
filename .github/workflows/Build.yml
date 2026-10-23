@@ -15,20 +15,21 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Install Theos & SDKs
+    - name: Manual Install Theos & SDKs
       env:
         THEOS: ${{ github.workspace }}/theos
       run: |
-        # Cài đặt Theos trực tiếp (không dùng action bên thứ 3 để tránh lỗi)
-        bash -c "$(curl -fsSL https://raw.githubusercontent.com/theos/theos/master/bin/install-theos)"
+        # 1. Tải Theos trực tiếp từ Github
+        git clone --recursive https://github.com/theos/theos.git $THEOS
         
-        # Tải SDK iOS mới nhất
-        mkdir -p "$THEOS/sdks"
-        cd "$THEOS/sdks"
-        curl -L -o master.zip https://github.com/theos/sdks/archive/refs/heads/master.zip
-        unzip -q d master.zip
-        mv sdks-master/* .
-        rm -rf sdks-master master.zip
+        # 2. Tải SDK iOS (Bản 16.5)
+        mkdir -p $THEOS/sdks
+        curl -L -o sdk.zip https://github.com/theos/sdks/releases/download/master/iPhoneOS16.5.sdk.zip
+        unzip -q sdk.zip -d $THEOS/sdks/
+        rm sdk.zip
+        
+        # 3. Cấp quyền thực thi cho các tool của Theos
+        chmod +x $THEOS/bin/*
 
     - name: Clean and Build
       env:
@@ -40,7 +41,7 @@ jobs:
         # Xóa ký tự xuống dòng (CRLF) nếu có
         find . -name "control" -exec perl -pi -e 's/\r//g' {} \; || true
         
-        # Buildự án
+        # Build dự án
         make clean
         make
 
