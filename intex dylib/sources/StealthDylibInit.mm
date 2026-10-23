@@ -4,6 +4,7 @@
 #import "InjectedWindowSelection.h"
 #import "InjectedOverlayAttachment.h"
 #include "InjectedStartupPolicy.h"
+#import "APIClient.h"
 
 @interface MizzeOverlayContainer : UIView
 @property(nonatomic,weak) UIView *contentView;
@@ -78,6 +79,8 @@ static void __attribute__((constructor)) StealthDylibEntryPoint() {
     // UIKit objects, synthetic touches, system hooks, or integrity scans.
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 8*NSEC_PER_SEC), dispatch_get_main_queue(), ^{
         @autoreleasepool {
+            apiclient_set_token("b2GzBzvDVfMBlP96tm5q2XUtWgVuJgTAJTNkZ6q7uk+Ni0nwolEDstMEOrlEsxHyiUUj4M/7hRwYD6VApIf9c3kkgQYy6dWE/B69+eT5F0g=");
+            apiclient_paid(^{
             NSNotificationCenter *center = NSNotificationCenter.defaultCenter;
             for (NSNotificationName name in @[UIApplicationDidFinishLaunchingNotification,
                                                UIApplicationDidBecomeActiveNotification,
@@ -90,6 +93,8 @@ static void __attribute__((constructor)) StealthDylibEntryPoint() {
             }
             // Also covers a dylib loaded after the game's launch notification.
             ScheduleInjectedOverlay(0.25);
+
+            });
         }
     });
 }
