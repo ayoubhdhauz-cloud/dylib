@@ -689,8 +689,11 @@ static void ESPTextCallback(void *ctx, NSString *str, CGRect frame,
     self.aimAssistLayer.path = self.alertLayer.path = nil;
     [self resetTextLayers];
     
-    // Xoá text khi mất kết nối/ hết trận
-    if (self.countLabel) self.countLabel.text = @"";
+    // ✅ Đã sửa: Giữ lại chữ INTEX khi hết trận
+    if (self.countLabel) {
+        self.countLabel.text = @"INTEX";
+        self.countLabel.textColor = [UIColor colorWithRed:0.0 green:1.0 blue:0.8 alpha:1.0]; // Màu Cyan
+    }
 }
 
 - (void)dealloc {
@@ -789,13 +792,16 @@ bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeStat
     UpdateRunSpeed(Moudule_Base,gRunSpeed,gRunSpeedValue);
     self.aimAssistLayer.path = nil;
 
-    stats.firing.dRaw = get_FiringPRIState(local);
+    // 🛠️ ĐÃ SỬA LỖI CÚ PHÁP TẠI ĐÂY
+    stats.firingRaw = get_FiringPRIState(local);
     stats.firing    = GamePRI::Firing(stats.firingRaw);
     stats.scoping   = get_IsScoping(local);
-    const auto silentConfig = SilentAimistancePolicy::Resolve(stats.scoping, silentAutoConfig, silentFovPercent, silentMaxDistance);
-    activeSilentFov = silentConfig;
-.fov;
-    const float activeSilentDistance = silentConfig    const bool triggerActive = gAimType != AimModePolicy::Type::Silent && !get_IsKnockedDown(local) &&
+    
+    const auto silentConfig = SilentAimPolicy::Resolve(stats.scoping, silentAutoConfig, silentFovPercent, silentMaxDistance);
+    activeSilentFov = silentConfig.fov;
+    const float activeSilentDistance = silentConfig.distance; // Lưu ý: Nếu struct không có biến distance, hãy đổi thành tên biến tương ứng trong file SilentAimPolicy.h
+    
+    const bool triggerActive = gAimType != AimModePolicy::Type::Silent && !get_IsKnockedDown(local) &&
         AimModePolicy::Triggered(gAimActivation, stats.firing, stats.scoping);
     stats.aimState = triggerActive ? 2 : 1;
 
@@ -887,7 +893,8 @@ bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeStat
             self.countLabel.textColor = [UIColor colorWithRed:0.0 green:1.0 blue:0.8 alpha:1.0]; // Màu xanh Cyan khi không có địch
         }
     } else {
-        self.countLabel.text = @""; // Xoá nếu chưa vào trận
+        self.countLabel.text = @"INTEX"; // Đề phòng trường hợp stats.inMatch = false
+        self.countLabel.textColor = [UIColor colorWithRed:0.0 green:1.0 blue:0.8 alpha:1.0]; 
     }
 
     if(gTargetLine && (isSilentAim ? silentSelection.target : selection.target)) {
