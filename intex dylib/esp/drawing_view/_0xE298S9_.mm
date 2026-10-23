@@ -86,7 +86,7 @@ static Vector3  gAimLockedHead  = {};
 static Quaternion gAimSmoothed      = {0,0,0,1};
 static bool       gAimSmoothedValid = false;
 static float      gAimSpeed         = 180.0f;
-static float      gESPMaxDistance   = 150.0f; // khoảng cách tối đa hiển thị ESP (mét)
+static float      gESPMaxDistance   = 150.0f;
 
 static bool gESPPrefsLoadedOnce = false;
 static NSUInteger gRenderPrefsRevision = 0;
@@ -271,7 +271,7 @@ static inline void ApplyPath(CAShapeLayer *layer, CGMutablePathRef path, bool di
     if (layer) layer.path = (dirty && path) ? path : nil;
 }
 
-// ─── Box (LÀM ĐẸP: Nét mảnh bo góc) ──────────────────────────────────────
+// ─── Box (Nét mảnh bo góc) ──────────────────────────────────────
 static inline void ESPAddBox(CGMutablePathRef path, CGRect rect) {
     if (path) {
         UIBezierPath *bezier = [UIBezierPath bezierPathWithRoundedRect:rect cornerRadius:1.5f];
@@ -279,7 +279,7 @@ static inline void ESPAddBox(CGMutablePathRef path, CGRect rect) {
     }
 }
 
-// ─── Snapline (LÀM ĐẸP: Line Top) ──
+// ─── Snapline (Line Top) ──
 static inline void ESPAddSnapline(CGMutablePathRef path, CGPoint start, CGPoint end) {
     if (path) {
         CGPathMoveToPoint(path, NULL, start.x, start.y);
@@ -287,14 +287,14 @@ static inline void ESPAddSnapline(CGMutablePathRef path, CGPoint start, CGPoint 
     }
 }
 
-// ─── Thanh máu (LÀM ĐẸP: Mỏng như sợi chỉ, viền đen) ────────────────
+// ─── Thanh máu (Mỏng như sợi chỉ, viền đen) ────────────────
 static inline void ESPAddHealthBar(CGMutablePathRef bgPath, CGMutablePathRef fillPath,
                                    CGRect boxRect, float hp) {
     if (!bgPath || !fillPath) return;
 
-    const CGFloat barW = 2.0f; // Mỏng
+    const CGFloat barW = 2.0f;
     const CGFloat gap  = 4.0f; 
-    const CGFloat bdr  = 0.5f; // Viền đen
+    const CGFloat bdr  = 0.5f;
 
     CGFloat x = boxRect.origin.x - gap - barW;
     CGFloat y = boxRect.origin.y;
@@ -437,27 +437,23 @@ static void ESPTextCallback(void *ctx, NSString *str, CGRect frame,
     return l;
 }
 
-// ─── ĐÃ CHỈNH MÀU SẮC & ĐỘ DÀY CHO ĐẸP ───
 - (void)configureRenderingLayers {
-    UIColor *white  = [UIColor colorWithRed:0.9 green:0.9 blue:0.9 alpha:0.85]; // Trắng xám
-    UIColor *hpGreen = [UIColor colorWithRed:0.46 green:0.86 blue:0.73 alpha:1.0]; // Mint
+    UIColor *white  = [UIColor colorWithRed:0.9 green:0.9 blue:0.9 alpha:0.85];
+    UIColor *hpGreen = [UIColor colorWithRed:0.46 green:0.86 blue:0.73 alpha:1.0];
     UIColor *red     = [UIColor colorWithRed:1.0 green:0.3 blue:0.3 alpha:0.9];
 
     self.boxKnockLayer   = [self makeShapeLayer:red fill:nil lineWidth:0.8f zPos:1];
     self.boxBotLayer     = [self makeShapeLayer:hpGreen fill:nil lineWidth:1.0f zPos:3];
     self.boxPlayerLayer  = [self makeShapeLayer:white fill:nil lineWidth:1.0f zPos:3];
 
-    // FOV mảnh, mờ
     self.fovLayer        = [self makeShapeLayer:[UIColor colorWithRed:0.46 green:0.86 blue:0.73 alpha:0.5f] fill:nil lineWidth:1.0f zPos:7];
     self.ghostLayer      = [self makeShapeLayer:[UIColor colorWithRed:0.46 green:0.86 blue:0.73 alpha:0.95] fill:nil lineWidth:1.8 zPos:7];
     
-    // Line Top: Mỏng, trắng mờ
     self.snaplineLayer   = [self makeShapeLayer:[UIColor colorWithWhite:1.0 alpha:0.4] fill:nil lineWidth:0.5f zPos:1];
+    self.boneLayer       = [self makeShapeLayer:white fill:nil lineWidth:0.8f zPos:2];
+    self.boxLayer        = [self makeShapeLayer:white fill:nil lineWidth:0.5f zPos:3];
     
-    self.boneLayer       = [self makeShapeLayer:white fill:nil lineWidth:0.8f zPos:2]; // Xương mảnh
-    self.boxLayer        = [self makeShapeLayer:white fill:nil lineWidth:0.5f zPos:3]; // Box ngoài mỏng
-    
-    self.hpBackgroundLayer = [self makeShapeLayer:nil fill:[UIColor colorWithWhite:0.0 alpha:0.8] lineWidth:0 zPos:4]; // Viền đen
+    self.hpBackgroundLayer = [self makeShapeLayer:nil fill:[UIColor colorWithWhite:0.0 alpha:0.8] lineWidth:0 zPos:4];
     self.hpFillLayer       = [self makeShapeLayer:nil fill:hpGreen lineWidth:0 zPos:5];
 
     self.hpWarningLayer = [self makeShapeLayer:nil fill:[UIColor colorWithRed:1 green:0.72 blue:0.25 alpha:1] lineWidth:0 zPos:5];
@@ -512,7 +508,6 @@ static void ESPTextCallback(void *ctx, NSString *str, CGRect frame,
     l.foregroundColor = color.CGColor;
     if (l.fontSize != fs || !l.font) {
         l.fontSize = fs;
-        // Chỉnh font Medium cho mảnh và thanh lịch hơn
         l.font = (__bridge CFTypeRef)[UIFont systemFontOfSize:fs weight:UIFontWeightMedium];
     }
     l.alignmentMode   = leftAligned ? kCAAlignmentLeft : kCAAlignmentCenter;
@@ -724,19 +719,19 @@ bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeStat
         }
     } silentFrame;
     if (!buffers || !isVaildPtr(Moudule_Base)) {
-        cachedMatchGame = cachedMatch = cachedCamera const = 0;
+        cachedMatchGame = cachedMatch = cachedCamera = 0;
         return stats;
     }
     const uint64_t matchGame = getMatchGame(Moudule_Base);
-    int if (!isVaildPtr(matchGame)) {
+    if (!isVaildPtr(matchGame)) {
         cachedMatchGame = cachedMatch = cachedCamera = 0;
         return stats;
     }
     const uint64_t match = getMatch(matchGame);
- capacity    const bool sameMatch = match == cachedMatch;
+    const bool sameMatch = match == cachedMatch;
     cachedMatchGame = matchGame;
     cachedMatch = match;
-    cachedCamera = Camera =Main(matchGame);
+    cachedCamera = CameraMain(matchGame);
     if (!isVaildPtr(cachedCamera) || !isVaildPtr(match)) return stats;
 
     const uint64_t local = getLocalPlayer(match);
@@ -751,8 +746,13 @@ bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeStat
     const int count = ReadAddr<int>(dict + kDictCount);
     const uint64_t entries = ReadAddr<uint64_t>(dict + kDictEntries);
     if (!isVaildPtr(entries)) return stats;
-    ReadAddr<int>(entries + kIl2CppArrayMaxLength);
-    if (capacity <= 0 || capacity > 256 || count < 0 || count > capacity) return stats;
+    const int capacity = ReadAddr<int>(entries + kIl2CppArrayMaxLength);
+    
+    // ĐÃ FIX LỖI CÚ PHÁP TẠI ĐÂY
+    if (capacity <= 0 || capacity > 256 || count < 0 || count > capacity) {
+        return stats;
+    }
+    
     std::array<uint8_t, 256 * kDictEntryStrideBytePlayer> snapshot{};
     if (count && !_read((long)(entries + kIl2CppArrayItems), snapshot.data(),
                        count * kDictEntryStrideBytePlayer)) return stats;
@@ -833,7 +833,6 @@ bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeStat
             }
         }
 
-        // ĐÃ SỬA: Line Top (Từ đỉnh đầu địch kéo thẳng lên mép trên màn hình)
         Vector3 headPos = getPositionExt(getHead(pawn));
         Vector3 screenHead = WorldToScreenLayer(headPos, matrix, vpW, vpH, vw, vh);
         
