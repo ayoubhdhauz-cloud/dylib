@@ -799,7 +799,7 @@ bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeStat
     
     const auto silentConfig = SilentAimPolicy::Resolve(stats.scoping, silentAutoConfig, silentFovPercent, silentMaxDistance);
     activeSilentFov = silentConfig.fov;
-    const float activeSilentDistance = silentConfig.distance; // Lưu ý: Nếu struct không có biến distance, hãy đổi thành tên biến tương ứng trong file SilentAimPolicy.h
+    const float activeSilentDistance = silentConfig.distance; 
     
     const bool triggerActive = gAimType != AimModePolicy::Type::Silent && !get_IsKnockedDown(local) &&
         AimModePolicy::Triggered(gAimActivation, stats.firing, stats.scoping);
@@ -833,18 +833,24 @@ bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeStat
         if (hp <= 0) continue;
         const Vector3 hip = getPositionExt(getHip(pawn));
         if (IsZeroVec(hip)) continue;
+        
+        // 🛠️ FIX LỖI CÚ PHÁP TẠI ĐÂY
         const float distance = Vector3::Distance(myLoc, hip);
-        if (!std::isfinite(distance) || distance > std::max(g {
-ESPMaxDistance,
-            isSilentAim ? activeSilentDistance : gESPMaxDistance)) continue;
+        const float maxDist = isSilentAim ? activeSilentDistance : gESPMaxDistance;
+        if (!std::isfinite(distance) || distance > maxDist) continue;
+        
         const bool knocked = get_IsKnockedDown(pawn);
         const bool visible = getIsVisible(pawn);
 
-        if ((triggerActive ||                isSilentAim) && visible && !knocked) {
+        if ((triggerActive || isSilentAim) && visible && !knocked) {
             Vector3 head = getPositionExt(getHead(pawn));
-            if (isAimNeck && !isSil constentAim) head = AimPoint::Neck(head, hip);
-            if (!IsZeroVec(head) && std::isfinite(head.x Vector) &&
-                std::isfinite(head.y) && std::isfinite(head.z))3 screen = WorldToScreenLayer(head, matrix, vpW, vpH, vw, vh);
+            
+            // 🛠️ FIX LỖI CHÍNH TẢ TẠI ĐÂY
+            if (isAimNeck && !isSilentAim) head = AimPoint::Neck(head, hip);
+            
+            if (!IsZeroVec(head) && std::isfinite(head.x) &&
+                std::isfinite(head.y) && std::isfinite(head.z)) {
+                Vector3 screen = WorldToScreenLayer(head, matrix, vpW, vpH, vw, vh);
                 if (isSilentAim) {
                     silentSelection.consider(pawn, screen.x, screen.y, screen.z, vw, vh,
                         radius, distance, activeSilentDistance, true);
