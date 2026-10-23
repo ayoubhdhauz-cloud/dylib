@@ -3,39 +3,35 @@ name: Build Dylib
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    # Sử dụng action cài Theos ổn định, tự động tải SDK chuẩn
-    - name: Setup Theos
-      uses: Randomblock1/theos-action@v1.2.0
+      - name: Setup Theos
+        uses: Randomblock1/theos-action@v1
+        with:
+          theos-sdks: 'https://github.com/theos/sdks'
 
-    - name: Clean and Build
-      env:
-        THEOS: ${{ github.workspace }}/theos
-      run: |
-        # Di chuyển vào thư mục chứa code (có dấu cách nên phải có ngoặc kép)
-        cd "intex dylib"
-        
-        # Xóa ký tự xuống dòng (CRLF) nếu có trong file control
-        find . -name "control" -exec perl -pi -e 's/\r//g' {} \; || true
-        
-        # Build dự án
-        make clean
-        make
+      - name: Build Dylib
+        run: |
+          cd "intex dylib"
+          find . -name "control" -exec perl -pi -e 's/\r//g' {} \; || true
+          make clean
+          make
+        env:
+          CFLAGS: "-Wl,-U,___isPlatformVersionAtLeast"
+          TARGET: iphone:clang:16.5:13.0
+          ARCHS: arm64
 
-    - name: Upload Dylib Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: Dylib-Build
-        path: "intex dylib/.theos/obj/**/*.dylib"
-        if-no-files-found: error
+      - name: Upload Dylib Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: iOSViet-Dylib
+          path: "intex dylib/.theos/obj/arm64/*.dylib"
+          if-no-files-found: warn
