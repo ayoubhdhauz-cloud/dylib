@@ -49,7 +49,7 @@ static void SetMatchReady(BOOL ready) {
 float percent = 0.0f;
 
 // ============================================================
-// ✅ BIẾN ESP (GIỮ LẠI)
+// ✅ BIẾN ESP 
 // ============================================================
 bool isBox        = YES;
 bool isBone       = NO;
@@ -150,7 +150,6 @@ void ESPSyncFromPrefs(void) {
     if (!std::isfinite(silentMaxDistance)) silentMaxDistance = 100;
     silentMaxDistance = std::max(10.0f, std::min(150.0f, silentMaxDistance));
     gNoReload = gAutoFire || ESPPrefsBool(@"ShootNoReload", NO);
-    // AimKill must use ordinary weapon timing even if manual fast fire is saved.
     gFastFire = !gAutoFire && ESPPrefsBool(@"FastFire", NO);
     SyncWeaponFeatureSwitches(Moudule_Base, gNoReload, gFastFire, gAutoFire);
     gAimSpeed       = ESPPrefsFloat(@"AimSpeed", 180.0f);
@@ -161,7 +160,6 @@ void ESPSyncFromPrefs(void) {
     gESPPrefsLoadedOnce = true;
     ++gRenderPrefsRevision;
 
-    // ESP Count logic
     if (isLine || isBox || isHealth || isBone) {
         isCount = YES;
     } else {
@@ -169,7 +167,6 @@ void ESPSyncFromPrefs(void) {
     }
 }
 
-// Nhả aim lock → frame kế tiếp chọn lại target trong FOV mới
 void ESPClearAimLock(void) {
     gAimLockTarget    = 0;
     gAimSmoothedValid = false;
@@ -177,9 +174,6 @@ void ESPClearAimLock(void) {
 
 static const NSUInteger kMaxTextLayerPoolSize = 128;
 
-// ============================================================
-// STRUCT COW (GIỮ NGUYÊN)
-// ============================================================
 struct COW_GamePlay_IHAAMHPPLMG_o {
     uint32_t NBPDJAAAFBH;
     uint32_t JEDDPHIHGKL;
@@ -191,7 +185,6 @@ struct COW_GamePlay_IHAAMHPPLMG_o {
 COW_GamePlay_IHAAMHPPLMG_o originalPlayerID;
 BOOL hasSavedOriginalID = false;
 
-// ─── Frame Cache ──────────────────────────────
 static uint64_t cachedMatchGame  = 0;
 static uint64_t cachedCamera     = 0;
 static uint64_t cachedMatch      = 0;
@@ -228,7 +221,6 @@ static NSString *AimStateDescription(int state) {
     }
 }
 
-// ─── Helpers ──────────────────────────────────
 static inline float Clamp01f(float v) {
     return v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v);
 }
@@ -279,16 +271,15 @@ static inline void ApplyPath(CAShapeLayer *layer, CGMutablePathRef path, bool di
     if (layer) layer.path = (dirty && path) ? path : nil;
 }
 
-// ─── Box (LÀM ĐẸP: Bo góc nhẹ) ──────────────────────────────────────
+// ─── Box (LÀM ĐẸP: Nét mảnh bo góc) ──────────────────────────────────────
 static inline void ESPAddBox(CGMutablePathRef path, CGRect rect) {
     if (path) {
-        // Sử dụng UIBezierPath để bo góc 2px cho khung mềm mại hơn
-        UIBezierPath *bezier = [UIBezierPath bezierPathWithRoundedRect:rect cornerRadius:2.0f];
+        UIBezierPath *bezier = [UIBezierPath bezierPathWithRoundedRect:rect cornerRadius:1.5f];
         CGPathAddPath(path, NULL, bezier.CGPath);
     }
 }
 
-// ─── Snapline (LÀM ĐẸP: Đường kẻ thay thế XYZ) ──
+// ─── Snapline (LÀM ĐẸP: Line Top) ──
 static inline void ESPAddSnapline(CGMutablePathRef path, CGPoint start, CGPoint end) {
     if (path) {
         CGPathMoveToPoint(path, NULL, start.x, start.y);
@@ -296,14 +287,14 @@ static inline void ESPAddSnapline(CGMutablePathRef path, CGPoint start, CGPoint 
     }
 }
 
-// ─── Thanh máu (LÀM ĐẸP: Mỏng và tinh tế hơn) ────────────────
+// ─── Thanh máu (LÀM ĐẸP: Mỏng như sợi chỉ, viền đen) ────────────────
 static inline void ESPAddHealthBar(CGMutablePathRef bgPath, CGMutablePathRef fillPath,
                                    CGRect boxRect, float hp) {
     if (!bgPath || !fillPath) return;
 
-    const CGFloat barW = 1.5f; // Mỏng hơn (cũ là 2.0)
-    const CGFloat gap  = 3.0f; // Khoảng cách với box
-    const CGFloat bdr  = 0.5f;
+    const CGFloat barW = 2.0f; // Mỏng
+    const CGFloat gap  = 4.0f; 
+    const CGFloat bdr  = 0.5f; // Viền đen
 
     CGFloat x = boxRect.origin.x - gap - barW;
     CGFloat y = boxRect.origin.y;
@@ -312,12 +303,11 @@ static inline void ESPAddHealthBar(CGMutablePathRef bgPath, CGMutablePathRef fil
     // Nền thanh máu
     CGPathAddRect(bgPath, NULL, CGRectMake(x - bdr, y - bdr, barW + bdr * 2.0f, h + bdr * 2.0f));
 
-    // Phần máu tụt xuống (Bo tròn đầu thanh máu)
+    // Phần máu tụt xuống
     CGFloat fillH = h * Clamp01f(hp);
     CGFloat fillY = y + (h - fillH);
     if (fillH > 0.5f) {
-        UIBezierPath *fillBezier = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(x, fillY, barW, fillH) cornerRadius:barW/2];
-        CGPathAddPath(fillPath, NULL, fillBezier.CGPath);
+        CGPathAddRect(fillPath, NULL, CGRectMake(x, fillY, barW, fillH));
     }
 }
 
@@ -332,9 +322,6 @@ static inline BOOL RenderFOVCirclePath(CGMutablePathRef path,
     return YES;
 }
 
-// ─────────────────────────────────────────────
-// MARK: - ESP_View Interface
-// ─────────────────────────────────────────────
 @interface _0xDAB2826 ()
 @property (nonatomic, strong) CADisplayLink          *displayLink;
 @property (nonatomic, strong) CAShapeLayer           *boxLayer;
@@ -362,9 +349,6 @@ static inline BOOL RenderFOVCirclePath(CGMutablePathRef path,
 @property (nonatomic, assign) float lastFovRadius;
 @end
 
-// ─────────────────────────────────────────────
-// MARK: - ESP_View Implementation
-// ─────────────────────────────────────────────
 @implementation _0xDAB2826
 
 - (void)showMenu              { }
@@ -372,7 +356,6 @@ static inline BOOL RenderFOVCirclePath(CGMutablePathRef path,
 - (void)centerMenu            { }
 - (void)handlePan:(UIPanGestureRecognizer *)g { }
 
-// ─── FIX TOẠ ĐỘ VÀ SIZE CHỮ ───
 static void ESPTextCallback(void *ctx, NSString *str, CGRect frame,
                                 UIColor *color, CGFloat fontSize, BOOL leftAligned) {
     if (!ctx || !str) return;
@@ -384,10 +367,7 @@ static void ESPTextCallback(void *ctx, NSString *str, CGRect frame,
                           frame.size.height);
 
     CGFloat finalSize = fontSize;
-
-    [view addText:str frame:f
-            color:color
-         fontSize:finalSize leftAligned:leftAligned];
+    [view addText:str frame:f color:color fontSize:finalSize leftAligned:leftAligned];
 }
 
 - (instancetype)initWithFrame:(CGRect)frame {
@@ -441,7 +421,6 @@ static void ESPTextCallback(void *ctx, NSString *str, CGRect frame,
     Moudule_Base = (uint64_t)GetGameModule_Base((char *)KH_STR(MIZZE_GAME_PROCESS_NAME));
 }
 
-// ─── Layer Factory ────────────────────────────
 - (CAShapeLayer *)makeShapeLayer:(UIColor *)stroke fill:(UIColor *)fill
                         lineWidth:(CGFloat)lw zPos:(CGFloat)z {
     CAShapeLayer *l   = [CAShapeLayer layer];
@@ -458,31 +437,34 @@ static void ESPTextCallback(void *ctx, NSString *str, CGRect frame,
     return l;
 }
 
+// ─── ĐÃ CHỈNH MÀU SẮC & ĐỘ DÀY CHO ĐẸP ───
 - (void)configureRenderingLayers {
-    UIColor *white  = [UIColor colorWithRed:0.72 green:0.91 blue:1.0 alpha:0.95];
-    UIColor *clear  = UIColor.clearColor;
-    
-    UIColor *hpGreen = [UIColor colorWithRed:0.46 green:0.86 blue:0.73 alpha:0.9];
-    UIColor *red     = [UIColor colorWithRed:0.9 green:0.55 blue:0.55 alpha:0.8];
+    UIColor *white  = [UIColor colorWithRed:0.9 green:0.9 blue:0.9 alpha:0.85]; // Trắng xám
+    UIColor *hpGreen = [UIColor colorWithRed:0.46 green:0.86 blue:0.73 alpha:1.0]; // Mint
+    UIColor *red     = [UIColor colorWithRed:1.0 green:0.3 blue:0.3 alpha:0.9];
 
-    self.boxKnockLayer   = [self makeShapeLayer:red fill:nil lineWidth:0.5f zPos:1];
+    self.boxKnockLayer   = [self makeShapeLayer:red fill:nil lineWidth:0.8f zPos:1];
     self.boxBotLayer     = [self makeShapeLayer:hpGreen fill:nil lineWidth:1.0f zPos:3];
     self.boxPlayerLayer  = [self makeShapeLayer:white fill:nil lineWidth:1.0f zPos:3];
 
-    self.fovLayer        = [self makeShapeLayer:[UIColor colorWithRed:0.0f green:1.0f blue:0.0f alpha:1.0f] fill:nil lineWidth:1.2f zPos:7];
-    self.ghostLayer = [self makeShapeLayer:[UIColor colorWithRed:0.46 green:0.86 blue:0.73 alpha:0.95]
-        fill:nil lineWidth:1.8 zPos:7];
-    self.snaplineLayer     = [self makeShapeLayer:white   fill:nil     lineWidth:0.8f zPos:1];
-    self.boneLayer         = [self makeShapeLayer:white   fill:nil     lineWidth:1.0f zPos:2];
-    self.boxLayer          = [self makeShapeLayer:white   fill:nil     lineWidth:0.5f zPos:3];
-    self.hpBackgroundLayer = [self makeShapeLayer:nil     fill:[UIColor colorWithWhite:0.02 alpha:0.9] lineWidth:0 zPos:4];
-    self.hpFillLayer       = [self makeShapeLayer:nil     fill:hpGreen lineWidth:0    zPos:5];
+    // FOV mảnh, mờ
+    self.fovLayer        = [self makeShapeLayer:[UIColor colorWithRed:0.46 green:0.86 blue:0.73 alpha:0.5f] fill:nil lineWidth:1.0f zPos:7];
+    self.ghostLayer      = [self makeShapeLayer:[UIColor colorWithRed:0.46 green:0.86 blue:0.73 alpha:0.95] fill:nil lineWidth:1.8 zPos:7];
+    
+    // Line Top: Mỏng, trắng mờ
+    self.snaplineLayer   = [self makeShapeLayer:[UIColor colorWithWhite:1.0 alpha:0.4] fill:nil lineWidth:0.5f zPos:1];
+    
+    self.boneLayer       = [self makeShapeLayer:white fill:nil lineWidth:0.8f zPos:2]; // Xương mảnh
+    self.boxLayer        = [self makeShapeLayer:white fill:nil lineWidth:0.5f zPos:3]; // Box ngoài mỏng
+    
+    self.hpBackgroundLayer = [self makeShapeLayer:nil fill:[UIColor colorWithWhite:0.0 alpha:0.8] lineWidth:0 zPos:4]; // Viền đen
+    self.hpFillLayer       = [self makeShapeLayer:nil fill:hpGreen lineWidth:0 zPos:5];
 
     self.hpWarningLayer = [self makeShapeLayer:nil fill:[UIColor colorWithRed:1 green:0.72 blue:0.25 alpha:1] lineWidth:0 zPos:5];
     self.hpCriticalLayer = [self makeShapeLayer:nil fill:[UIColor colorWithRed:1 green:0.27 blue:0.32 alpha:1] lineWidth:0 zPos:5];
     self.hpHighlightLayer = [self makeShapeLayer:nil fill:[UIColor colorWithWhite:1 alpha:0.4] lineWidth:0 zPos:6];
 
-    self.aimAssistLayer = [self makeShapeLayer:[UIColor colorWithRed:0.46 green:0.86 blue:0.73 alpha:0.9] fill:nil lineWidth:1.6 zPos:7];
+    self.aimAssistLayer = [self makeShapeLayer:hpGreen fill:nil lineWidth:1.2f zPos:7];
     
     for (CAShapeLayer *l in @[self.aimAssistLayer, self.ghostLayer, self.hpWarningLayer, self.hpCriticalLayer, self.hpHighlightLayer, self.fovLayer, self.snaplineLayer, self.boneLayer, self.boxLayer,
                                self.hpBackgroundLayer, self.hpFillLayer,
@@ -530,7 +512,8 @@ static void ESPTextCallback(void *ctx, NSString *str, CGRect frame,
     l.foregroundColor = color.CGColor;
     if (l.fontSize != fs || !l.font) {
         l.fontSize = fs;
-        l.font = (__bridge CFTypeRef)[UIFont systemFontOfSize:fs weight:UIFontWeightSemibold];
+        // Chỉnh font Medium cho mảnh và thanh lịch hơn
+        l.font = (__bridge CFTypeRef)[UIFont systemFontOfSize:fs weight:UIFontWeightMedium];
     }
     l.alignmentMode   = leftAligned ? kCAAlignmentLeft : kCAAlignmentCenter;
 }
@@ -542,8 +525,8 @@ static void ESPTextCallback(void *ctx, NSString *str, CGRect frame,
     UIColor *boxColor = ESPColor(@"BoxColor", 0.46, 0.86, 0.73);
     self.boxBotLayer.strokeColor = self.boxPlayerLayer.strokeColor = self.boxKnockLayer.strokeColor = boxColor.CGColor;
     
-    self.snaplineLayer.strokeColor = [UIColor colorWithWhite:1 alpha:.6].CGColor; 
-    self.snaplineLayer.lineWidth = 0.8;
+    self.snaplineLayer.strokeColor = [UIColor colorWithWhite:1 alpha:0.4].CGColor; 
+    self.snaplineLayer.lineWidth = 0.5;
     
     self.fovLayer.strokeColor = ESPColor(@"FovColor", 0.46, 0.86, 0.73).CGColor;
     
@@ -554,8 +537,8 @@ static void ESPTextCallback(void *ctx, NSString *str, CGRect frame,
     
     self.boneLayer.lineWidth = 1.0;
     self.boneLayer.opacity = 0.75;
-    self.fovLayer.lineWidth = 1.2;
-    self.fovLayer.opacity = 0.6;
+    self.fovLayer.lineWidth = 1.0;
+    self.fovLayer.opacity = 0.5;
     
     const float fps = gBalancedRender ? 30.0f : 60.0f;
     if (@available(iOS 15.0, *)) self.displayLink.preferredFrameRateRange = CAFrameRateRangeMake(fps, fps, fps);
@@ -678,6 +661,7 @@ static void ESPTextCallback(void *ctx, NSString *str, CGRect frame,
     self.ghostLayer.path = path;
     CGPathRelease(path);
 }
+
 - (void)clearAllContent {
     self.ghostLayer.path = nil;
     AutoFireClear();
@@ -705,14 +689,10 @@ static void ESPTextCallback(void *ctx, NSString *str, CGRect frame,
     _displayLink = nil;
 }
 
-
 static inline bool IsZeroVec(const Vector3 &v) {
     return v.x == 0.0f && v.y == 0.0f && v.z == 0.0f;
 }
 
-// ============================================================
-// ✅ HELPER: Kiểm tra Bot / Knocked
-// ============================================================
 bool get_IsBot(uint64_t player) {
     if (!isVaildPtr(player)) return false;
     return ReadAddr<uint8_t>(player + (uint64_t)kIsClientBot) != 0;
@@ -732,7 +712,6 @@ bool get_IsKnockedDown(uint64_t player) {
 
 bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeState(GetDataUInt16(p, 12)); }
 
-
 - (ESPFrameStats)renderESPWithBuffers:(ESPGeometryBuffers *)buffers
                             viewWidth:(CGFloat)vw viewHeight:(CGFloat)vh
                         matrixVpWidth:(CGFloat)vpW matrixVpHeight:(CGFloat)vpH {
@@ -745,19 +724,19 @@ bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeStat
         }
     } silentFrame;
     if (!buffers || !isVaildPtr(Moudule_Base)) {
-        cachedMatchGame = cachedMatch = cachedCamera = 0;
+        cachedMatchGame = cachedMatch = cachedCamera const = 0;
         return stats;
     }
     const uint64_t matchGame = getMatchGame(Moudule_Base);
-    if (!isVaildPtr(matchGame)) {
+    int if (!isVaildPtr(matchGame)) {
         cachedMatchGame = cachedMatch = cachedCamera = 0;
         return stats;
     }
     const uint64_t match = getMatch(matchGame);
-    const bool sameMatch = match == cachedMatch;
+ capacity    const bool sameMatch = match == cachedMatch;
     cachedMatchGame = matchGame;
     cachedMatch = match;
-    cachedCamera = CameraMain(matchGame);
+    cachedCamera = Camera =Main(matchGame);
     if (!isVaildPtr(cachedCamera) || !isVaildPtr(match)) return stats;
 
     const uint64_t local = getLocalPlayer(match);
@@ -772,7 +751,7 @@ bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeStat
     const int count = ReadAddr<int>(dict + kDictCount);
     const uint64_t entries = ReadAddr<uint64_t>(dict + kDictEntries);
     if (!isVaildPtr(entries)) return stats;
-    const int capacity = ReadAddr<int>(entries + kIl2CppArrayMaxLength);
+    ReadAddr<int>(entries + kIl2CppArrayMaxLength);
     if (capacity <= 0 || capacity > 256 || count < 0 || count > capacity) return stats;
     std::array<uint8_t, 256 * kDictEntryStrideBytePlayer> snapshot{};
     if (count && !_read((long)(entries + kIl2CppArrayItems), snapshot.data(),
@@ -854,13 +833,14 @@ bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeStat
             }
         }
 
-        // LÀM ĐẸP: Thay vẽ XYZ bằng đường kẻ Snapline từ tâm dưới màn hình lên đầu địch
+        // ĐÃ SỬA: Line Top (Từ đỉnh đầu địch kéo thẳng lên mép trên màn hình)
         Vector3 headPos = getPositionExt(getHead(pawn));
         Vector3 screenHead = WorldToScreenLayer(headPos, matrix, vpW, vpH, vw, vh);
         
         if (isLine && distance <= gESPMaxDistance && screenHead.z > 0 && std::isfinite(screenHead.x) && std::isfinite(screenHead.y)) {
-            CGPoint startPoint = CGPointMake(vw * 0.5f, vh); 
-            ESPAddSnapline(buffers->snaplinePath, startPoint, CGPointMake(screenHead.x, screenHead.y));
+            CGPoint startPoint = CGPointMake(screenHead.x, screenHead.y - 5.0f); 
+            CGPoint endPoint = CGPointMake(screenHead.x, 0); 
+            ESPAddSnapline(buffers->snaplinePath, startPoint, endPoint);
             buffers->snaplineDirty = YES;
         }
 
@@ -939,7 +919,7 @@ bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeStat
 @end
 
 // ============================================================
-// ✅ _0x953DA13 - VIEW CONTAINER (GIỮ NGUYÊN)
+// ✅ _0x953DA13 - VIEW CONTAINER
 // ============================================================
 @implementation _0x953DA13 {
     _0xDAB2826 *_0x2862AD;
