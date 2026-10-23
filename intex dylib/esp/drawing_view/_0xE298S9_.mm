@@ -57,7 +57,7 @@ bool isCount      = NO;
 bool isHealth     = YES;
 bool isName       = YES;
 bool isDis        = YES;
-bool isLine       = NO;
+bool isLine       = YES;
 bool isHeadRedDot = NO;
 bool isBox3D = NO;
 bool isCleanESP = YES;
@@ -105,7 +105,7 @@ void ESPSyncFromPrefs(void) {
     isHealth     = espEnabled && ESPPrefsBool(KH_NS("Health"),     YES);
     isName       = espEnabled && ESPPrefsBool(KH_NS("Name"),       YES);
     isDis        = espEnabled && ESPPrefsBool(KH_NS("Dis"),        YES);
-    isLine       = espEnabled && ESPPrefsBool(KH_NS("Line"),       NO);
+    isLine       = espEnabled && ESPPrefsBool(KH_NS("Line"),       YES);
     isHeadRedDot = espEnabled && ESPPrefsBool(KH_NS("HeadRedDot"), NO);
     isBox3D = ESPPrefsBool(@"Box3D", NO);
     isCleanESP = !isBox3D && ESPPrefsBool(@"CleanESP", YES);
@@ -390,7 +390,7 @@ static void ESPTextCallback(void *ctx, NSString *str, CGRect frame,
 #endif
 
     // Tạo Label hiển thị số đếm hoặc chữ INTEX
-    self.countLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 40, self.bounds.size.width, 30)];
+    self.countLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 50, self.bounds.size.width, 30)];
     self.countLabel.textAlignment = NSTextAlignmentCenter;
     self.countLabel.textColor = [UIColor colorWithRed:0.0 green:1.0 blue:0.8 alpha:1.0]; // Màu Cyan
     self.countLabel.font = [UIFont boldSystemFontOfSize:18];
@@ -428,7 +428,7 @@ static void ESPTextCallback(void *ctx, NSString *str, CGRect frame,
 - (void)layoutSubviews {
     [super layoutSubviews];
     if (self.superview) self.frame = self.superview.bounds;
-    if (self.countLabel) self.countLabel.frame = CGRectMake(0, 40, self.bounds.size.width, 30);
+    if (self.countLabel) self.countLabel.frame = CGRectMake(0, 50, self.bounds.size.width, 30);
 }
 
 - (void)setupModuleBase {
@@ -464,7 +464,9 @@ static void ESPTextCallback(void *ctx, NSString *str, CGRect frame,
     self.fovLayer        = [self makeShapeLayer:[UIColor colorWithRed:0.46 green:0.86 blue:0.73 alpha:0.5f] fill:nil lineWidth:1.0f zPos:7];
     self.ghostLayer      = [self makeShapeLayer:cyanColor fill:nil lineWidth:1.8 zPos:7];
     
+    // Line nối từ đầu địch
     self.snaplineLayer   = [self makeShapeLayer:cyanColor fill:nil lineWidth:0.8f zPos:1];
+    
     self.boneLayer       = [self makeShapeLayer:white fill:nil lineWidth:0.8f zPos:2];
     self.boxLayer        = [self makeShapeLayer:cyanColor fill:nil lineWidth:0.5f zPos:3];
     
@@ -533,11 +535,9 @@ static void ESPTextCallback(void *ctx, NSString *str, CGRect frame,
     if (self.appliedRenderRevision == gRenderPrefsRevision) return;
     self.appliedRenderRevision = gRenderPrefsRevision;
     
-    UIColor *boxColor = ESPColor(@"BoxColor", 0.46, 0.86, 0.73);
+    UIColor *boxColor = ESPColor(@"BoxColor", 0.0, 1.0, 0.8); // Cyan
     self.boxBotLayer.strokeColor = self.boxPlayerLayer.strokeColor = self.boxKnockLayer.strokeColor = boxColor.CGColor;
-    
-    self.snaplineLayer.strokeColor = [UIColor colorWithWhite:1 alpha:0.4].CGColor; 
-    self.snaplineLayer.lineWidth = 0.5;
+    self.snaplineLayer.strokeColor = boxColor.CGColor; 
     
     self.fovLayer.strokeColor = ESPColor(@"FovColor", 0.46, 0.86, 0.73).CGColor;
     
@@ -789,13 +789,13 @@ bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeStat
     UpdateRunSpeed(Moudule_Base,gRunSpeed,gRunSpeedValue);
     self.aimAssistLayer.path = nil;
 
-    stats.firingRaw = get_FiringPRIState(local);
+    stats.firing.dRaw = get_FiringPRIState(local);
     stats.firing    = GamePRI::Firing(stats.firingRaw);
     stats.scoping   = get_IsScoping(local);
-    const auto silentConfig = SilentAimPolicy::Resolve(stats.scoping, silentAutoConfig, silentFovPercent, silentMaxDistance);
-    activeSilentFov = silentConfig.fov;
-    const float activeSilentDistance = silentConfig.distance;
-    const bool triggerActive = gAimType != AimModePolicy::Type::Silent && !get_IsKnockedDown(local) &&
+    const auto silentConfig = SilentAimistancePolicy::Resolve(stats.scoping, silentAutoConfig, silentFovPercent, silentMaxDistance);
+    activeSilentFov = silentConfig;
+.fov;
+    const float activeSilentDistance = silentConfig    const bool triggerActive = gAimType != AimModePolicy::Type::Silent && !get_IsKnockedDown(local) &&
         AimModePolicy::Triggered(gAimActivation, stats.firing, stats.scoping);
     stats.aimState = triggerActive ? 2 : 1;
 
@@ -854,13 +854,15 @@ bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeStat
             }
         }
 
-        // Line Top (Từ đỉnh đầu địch kéo thẳng lên mép trên màn hình)
+        // Line Top (Từ đỉnh đầu địch kéo lên vị trí chữ "Địch: ...")
         Vector3 headPos = getPositionExt(getHead(pawn));
         Vector3 screenHead = WorldToScreenLayer(headPos, matrix, vpW, vpH, vw, vh);
         
         if (isLine && distance <= gESPMaxDistance && screenHead.z > 0 && std::isfinite(screenHead.x) && std::isfinite(screenHead.y)) {
             CGPoint startPoint = CGPointMake(screenHead.x, screenHead.y - 5.0f); 
-            CGPoint endPoint = CGPointMake(screenHead.x, 0); 
+            // Kéo lên vị trí Label "Địch: số" (Y = 50, cao 30 -> Tâm là 65)
+            // + 10px để line dừng ngay dưới chân chữ
+            CGPoint endPoint = CGPointMake(screenHead.x, 65.0f + 10.0f); 
             ESPAddSnapline(buffers->snaplinePath, startPoint, endPoint);
             buffers->snaplineDirty = YES;
         }
@@ -879,10 +881,10 @@ bool get_IsScoping(uint64_t p) { return isVaildPtr(p) && AimSelection::ScopeStat
     if (stats.inMatch) {
         if (totalEnemies > 0) {
             self.countLabel.text = [NSString stringWithFormat:@"Địch: %d", totalEnemies];
-            self.countLabel.textColor = [UIColor colorWithRed:0.0 green:1.0 blue:0.8 alpha:1.0]; // Cyan
+            self.countLabel.textColor = [UIColor redColor]; // Màu đỏ khi có địch
         } else {
             self.countLabel.text = @"INTEX";
-            self.countLabel.textColor = [UIColor whiteColor]; // Trắng
+            self.countLabel.textColor = [UIColor colorWithRed:0.0 green:1.0 blue:0.8 alpha:1.0]; // Màu xanh Cyan khi không có địch
         }
     } else {
         self.countLabel.text = @""; // Xoá nếu chưa vào trận
