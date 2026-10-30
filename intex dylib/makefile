@@ -1,6 +1,5 @@
-THEOS ?= /opt/theos
 ARCHS := arm64
-TARGET := iphone:clang:16.5:13.0
+TARGET := iphone:latest
 FINALPACKAGE = 1
 FOR_RELEASE = 1
 GAME_VARIANT ?= th
@@ -37,7 +36,7 @@ iOSViet_CFLAGS += -DMIZZE_GAME_PROCESS_NAME="\"FreeFire\""
 endif
 
 iOSViet_CCFLAGS += -std=c++17
-iOSViet_LDFLAGS += -Wl,-dead_strip_dylibs -Wl,-install_name,@rpath/libsubsystem.dylib sources/libAPIClient.a
+iOSViet_LDFLAGS += -Wl,-dead_strip_dylibs -Wl,-install_name,@rpath/libsubsystem.dylib
 iOSViet_FRAMEWORKS += CoreGraphics QuartzCore UIKit Security
 
 include $(THEOS_MAKE_PATH)/tweak.mk
